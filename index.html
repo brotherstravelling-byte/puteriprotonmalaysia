@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Car Sales Advisor Calculator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .calculator {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 420px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin: 12px 0 5px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #555;
+    }
+    .toggle-container {
+      display: flex;
+      background: #eee;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .toggle-container label {
+      flex: 1;
+      text-align: center;
+      margin: 0;
+      padding: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+    .toggle-container input {
+      display: none;
+    }
+    .toggle-container input:checked + span {
+      background: #0078d7;
+      color: white;
+      display: block;
+      padding: 8px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    .toggle-container span {
+      display: block;
+      padding: 8px;
+      color: #666;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .input-group {
+      flex: 1;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+    input:focus {
+      border-color: #0078d7;
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,120,215,0.2);
+    }
+    .button-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-copy { background: #28a745; color: white; }
+    .btn-reset { background: #dc3545; color: white; }
+    #output {
+      margin-top: 20px;
+      white-space: pre-line;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <h2>🚗 Car Loan Advisor</h2>
+    
+    <label>Price of Car (RM)</label>
+    <input type="number" id="price" placeholder="eg; 48000" oninput="calculate('price')">
+
+    <label>Insurance Price (RM)</label>
+    <input type="number" id="insurance" placeholder="eg; 1500" oninput="calculate('insurance')">
+
+    <label>Rebate / Discount (RM)</label>
+    <input type="number" id="rebate" placeholder="eg; 1000" oninput="calculate('rebate')">
+
+    <label>Calculate DP % based on:</label>
+    <div class="toggle-container">
+      <label>
+        <input type="radio" name="dpBasis" value="before" checked onclick="syncDownpayment('percent')">
+        <span>Before Rebate</span>
+      </label>
+      <label>
+        <input type="radio" name="dpBasis" value="after" onclick="syncDownpayment('percent')">
+        <span>After Rebate</span>
+      </label>
+    </div>
+
+    <div class="input-row">
+      <div class="input-group">
+        <label>Downpayment (%)</label>
+        <input type="number" id="downPercent" placeholder="eg; 10" oninput="syncDownpayment('percent')">
+      </div>
+      <div class="input-group">
+        <label>Downpayment (RM)</label>
+        <input type="number" id="downAmount" placeholder="eg; 4800" oninput="syncDownpayment('amount')">
+      </div>
+    </div>
+
+    <label>Interest Rate (%)</label>
+    <input type="number" id="interest" step="0.01" placeholder="eg; 2.8" oninput="calculate()">
+
+    <label>Duration of Loan (years)</label>
+    <input type="number" id="years" placeholder="eg; 9" oninput="calculate()">
+
+    <div class="button-container">
+        <button class="btn-copy" onclick="copyOutput()">📋 Copy Text</button>
+        <button class="btn-reset" onclick="resetForm()">🔄 Reset</button>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    let lastOutput = "";
+
+    function syncDownpayment(source) {
+      const price = parseFloat(document.getElementById("price").value) || 0;
+      const insurance = parseFloat(document.getElementById("insurance").value) || 0;
+      const rebate = parseFloat(document.getElementById("rebate").value) || 0;
+      const basis = document.querySelector('input[name="dpBasis"]:checked').value;
+
+      const baseValue = (basis === 'before') ? (price + insurance) : (price + insurance - rebate);
+      
+      const downPercentInput = document.getElementById("downPercent");
+      const downAmountInput = document.getElementById("downAmount");
+
+      if (baseValue > 0) {
+        if (source === 'percent') {
+          const percent = parseFloat(downPercentInput.value) || 0;
+          downAmountInput.value = (baseValue * (percent / 100)).toFixed(0);
+        } else {
+          const amount = parseFloat(downAmountInput.value) || 0;
+          downPercentInput.value = ((amount / baseValue) * 100).toFixed(2);
+        }
+      }
+      calculate();
+    }
+
+    function calculate(source) {
+      if (['price', 'insurance', 'rebate'].includes(source)) {
+        syncDownpayment('percent');
+      }
+
+      const price = parseFloat(document.getElementById("price").value) || 0;
+      const insurance = parseFloat(document.getElementById("insurance").value) || 0;
+      const rebate = parseFloat(document.getElementById("rebate").value) || 0;
+      const downAmount = parseFloat(document.getElementById("downAmount").value) || 0;
+      const downPercent = parseFloat(document.getElementById("downPercent").value) || 0;
+      const interestPercent = parseFloat(document.getElementById("interest").value) || 0;
+      const years = parseFloat(document.getElementById("years").value) || 0;
+
+      const otrPrice = price + insurance;
+      const interestRate = interestPercent / 100;
+      const months = years * 12;
+
+      const loanFull = otrPrice - rebate;
+      let monthlyFull = 0;
+      if (months > 0 && loanFull > 0) {
+        monthlyFull = (loanFull + (loanFull * interestRate * years)) / months;
+      }
+
+      const loanWithDown = loanFull - downAmount;
+      let monthlyWithDown = 0;
+      if (months > 0 && loanWithDown > 0) {
+        monthlyWithDown = (loanWithDown + (loanWithDown * interestRate * years)) / months;
+      }
+
+      const fmt = (num) => num.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      lastOutput = `🚗 *CAR QUOTATION*
+----------------------------
+💰 Price (Incl. Insurance): RM ${fmt(otrPrice)}
+🎁 Rebate: RM ${fmt(rebate)}
+📉 Interest Rate: ${interestPercent.toFixed(2)}%
+📆 Tenure: ${years} years (${months} months)
+
+✅ *OPTION 1: FULL LOAN*
+🏦 Loan Amount: RM ${fmt(loanFull)}
+💵 Monthly: RM ${fmt(monthlyFull)}
+
+✅ *OPTION 2: WITH DOWNPAYMENT*
+💳 Downpayment: RM ${fmt(downAmount)} (${downPercent}%)
+🏦 Loan Amount: RM ${fmt(loanWithDown)}
+💵 Monthly: RM ${fmt(monthlyWithDown)}
+----------------------------`;
+
+      document.getElementById("output").innerText = lastOutput;
+    }
+
+    function resetForm() {
+      document.querySelectorAll('input[type="number"]').forEach(i => i.value = "");
+      calculate();
+    }
+
+    function copyOutput() {
+      if (!document.getElementById("price").value) {
+        alert("Please enter a car price first!");
+        return;
+      }
+      navigator.clipboard.writeText(lastOutput).then(() => {
+        alert("Quotation copied to clipboard! ✅");
+      });
+    }
+
+    window.onload = calculate;
+  </script>
+</body>
+</html>
